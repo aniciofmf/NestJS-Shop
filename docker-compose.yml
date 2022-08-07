@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: pgshop_db
+    image: postgres:14.3
+    restart: always
+    ports:
+      - '5433:5432'
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ./pgsql:/var/lib/postgresql/data
