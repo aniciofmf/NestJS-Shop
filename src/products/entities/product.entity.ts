@@ -1,5 +1,11 @@
 import slugify from 'slugify';
-import { BeforeInsert, Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  BeforeInsert,
+  BeforeUpdate,
+  Column,
+  Entity,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
 @Entity()
 export class Product {
@@ -32,11 +38,20 @@ export class Product {
   gender: string;
 
   @BeforeInsert()
-  slugify() {
+  slugifyCreate() {
     if (!this.slug) {
       this.slug = this.title;
     }
 
+    this.slug = slugify(this.slug, {
+      replacement: '-',
+      lower: true,
+      trim: true,
+    });
+  }
+
+  @BeforeUpdate()
+  slugifyUpdate() {
     this.slug = slugify(this.slug, {
       replacement: '-',
       lower: true,
