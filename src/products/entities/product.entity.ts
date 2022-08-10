@@ -4,8 +4,10 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Image } from './image.entity';
 
 @Entity()
 export class Product {
@@ -42,6 +44,12 @@ export class Product {
     default: [],
   })
   tags: string[];
+
+  @OneToMany(() => Image, (productImage) => productImage.product, {
+    cascade: true,
+    eager: true,
+  })
+  images?: Image[];
 
   @BeforeInsert()
   slugifyCreate() {

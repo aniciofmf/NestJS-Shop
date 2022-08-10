@@ -6,29 +6,41 @@ import {
 } from '@nestjs/common';
 import { isUUID } from 'class-validator';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { DataSource, Repository, SelectQueryBuilder } from 'typeorm';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
-import { Product } from './entities/product.entity';
 import { PaginationDto } from '../common/dtos/pagination.dto';
+import { Product } from './entities/product.entity';
+import { Image } from './entities';
 
 @Injectable()
 export class ProductsService {
   private readonly logger = new Logger('Product Service');
   private productQueryBuilder: SelectQueryBuilder<Product> =
-    this.productRepository.createQueryBuilder();
+    this.productRepository.createQueryBuilder('p');
 
   constructor(
     @InjectRepository(Product)
     private readonly productRepository: Repository<Product>,
+    @InjectRepository(Image)
+    private readonly productImageRepository: Repository<Image>,
+    private readonly datasource: DataSource,
   ) {}
 
   async create(createProductDto: CreateProductDto) {
     try {
-      const product = await this.productRepository.create(createProductDto);
+      const { images = [], ...restOfProduct } = createProductDto;
+
+      const product = await this.productRepository.create({
+        ...restOfProduct,
+        images: images.map((image) =>
+          this.productImageRepository.create({ url: image }),
+        ),
+      });
+
       await this.productRepository.save(product);
 
-      return product;
+      return { ...product, images };
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -40,9 +52,15 @@ export class ProductsService {
       const products = await this.productRepository.find({
         take: limit,
         skip: offset,
+        relations: {
+          images: true,
+        },
       });
 
-      return products;
+      return products.map(({ images, ...restOfProduct }) => ({
+        ...restOfProduct,
+        images: images.map((image) => image.url),
+      }));
     } catch (error) {
       this.handleExceptions(error);
     }
@@ -59,6 +77,7 @@ export class ProductsService {
           title: term.toUpperCase(),
           slug: term.toLocaleLowerCase(),
         })
+        .leftJoinAndSelect('p.images', 'pImg')
         .getOne();
     }
 
@@ -67,24 +86,55 @@ export class ProductsService {
     return product;
   }
 
+  async findOneProduct(term: string) {
+    const { images = [], ...restOfProduct } = await this.findOne(term);
+
+    return {
+      ...restOfProduct,
+      images: images.map((image) => image.url),
+    };
+  }
+
   async update(id: string, updateProductDto: UpdateProductDto) {
+    const { images = [], ...restOfProduct } = updateProductDto;
+
     const product = await this.productRepository.preload({
       id: id,
-      ...updateProductDto,
+      ...restOfProduct,
     });
 
     if (!product) throw new NotFoundException('Not found');
 
+    const queryRunner = this.datasource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
     try {
-      return this.productRepository.save(product);
+      if (images) {
+        await queryRunner.manager.delete(Image, { product: { id } });
+
+        product.images = images.map((image) =>
+          this.productImageRepository.create({ url: image }),
+        );
+      }
+
+      await queryRunner.manager.save(product);
+
+      await queryRunner.commitTransaction();
+      await queryRunner.release();
+
+      return this.findOneProduct(id);
     } catch (error) {
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
       this.handleExceptions(error);
     }
   }
 
   async remove(id: string) {
     try {
-      await this.productRepository.delete(id);
+      const product = await this.findOne(id);
+      await this.productRepository.remove(product);
     } catch (error) {
       this.handleExceptions(error);
     }
