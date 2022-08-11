@@ -144,4 +144,14 @@ export class ProductsService {
     this.logger.error(error);
     throw new BadRequestException(error.detail);
   }
+
+  async deleteAll() {
+    const query = this.productRepository.createQueryBuilder('product');
+
+    try {
+      return await query.delete().where({}).execute();
+    } catch (error) {
+      this.handleExceptions(error);
+    }
+  }
 }
