@@ -67,6 +67,13 @@ export class AuthService {
     };
   }
 
+  checkAuth(user: User) {
+    return {
+      ...user,
+      token: this.generateJwtToken({ id: user.id }),
+    };
+  }
+
   private generateJwtToken(payload: JwtPayload) {
     const jwtToken = this.jwtService.sign(payload);
 

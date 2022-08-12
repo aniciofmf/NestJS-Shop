@@ -4,10 +4,12 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  ManyToOne,
   OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { Image } from './image.entity';
+import { User } from '../../auth/entities/user.entity';
 
 @Entity({ name: 'products' })
 export class Product {
@@ -50,6 +52,9 @@ export class Product {
     eager: true,
   })
   images?: Image[];
+
+  @ManyToOne(() => User, (user) => user.product)
+  user: User;
 
   @BeforeInsert()
   slugifyCreate() {

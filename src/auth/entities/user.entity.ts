@@ -3,8 +3,10 @@ import {
   BeforeUpdate,
   Column,
   Entity,
+  OneToMany,
   PrimaryGeneratedColumn,
 } from 'typeorm';
+import { Product } from '../../products/entities/product.entity';
 
 @Entity('users')
 export class User {
@@ -32,6 +34,9 @@ export class User {
     default: ['user'],
   })
   roles: string[];
+
+  @OneToMany(() => Product, (productUser) => productUser.user)
+  product: Product;
 
   @BeforeInsert()
   checkEmailBeforeInsert() {
