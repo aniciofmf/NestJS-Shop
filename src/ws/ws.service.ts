@@ -32,6 +32,10 @@ export class WsService {
     delete this.clients[clientId];
   }
 
+  userByfullname(socketId: string) {
+    return this.clients[socketId].user.fullname;
+  }
+
   get totalClients(): number {
     return Object.keys(this.clients).length;
   }
