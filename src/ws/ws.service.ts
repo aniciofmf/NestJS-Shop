@@ -20,6 +20,8 @@ export class WsService {
       throw new Error('User error');
     }
 
+    this.checkConnectionsByUser(user);
+
     this.clients[client.id] = {
       socket: client,
       user: user,
@@ -36,5 +38,16 @@ export class WsService {
 
   get clientsIds(): string[] {
     return Object.keys(this.clients);
+  }
+
+  private checkConnectionsByUser(user: User) {
+    for (const clientId of Object.keys(this.clients)) {
+      const connectedClient = this.clients[clientId];
+
+      if (connectedClient.user.id === user.id) {
+        connectedClient.socket.disconnect();
+        break;
+      }
+    }
   }
 }
