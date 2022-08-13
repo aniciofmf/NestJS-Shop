@@ -27,6 +27,7 @@ export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('clients:msg')
   handleMsg(client: Socket, payload: any) {
-    console.log(client.id, payload);
+    //client.broadcast.emit('server:messages', payload);
+    this.wss.emit('server:messages', payload);
   }
 }
