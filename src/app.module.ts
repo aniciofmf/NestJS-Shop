@@ -14,6 +14,13 @@ import { WsModule } from './ws/ws.module';
   imports: [
     ConfigModule.forRoot(),
     TypeOrmModule.forRoot({
+      ssl: process.env.ENVIRONMENT === 'prod' ? true : false,
+      extra: {
+        ssl:
+          process.env.ENVIRONMENT === 'prod'
+            ? { rejectUnatuhorized: false }
+            : null,
+      },
       type: 'postgres',
       host: process.env.DB_HOST,
       port: +process.env.DB_PORT,
