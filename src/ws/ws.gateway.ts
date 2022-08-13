@@ -22,5 +22,11 @@ export class WsGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   handleDisconnect(client: any) {
     this.wsService.removeClient(client.id);
+    this.wss.emit('clients:updated', this.wsService.clientsIds);
+  }
+
+  @SubscribeMessage('clients:msg')
+  handleMsg(client: Socket, payload: any) {
+    console.log(client.id, payload);
   }
 }
