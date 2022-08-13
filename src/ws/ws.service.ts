@@ -1,13 +1,29 @@
 import { Socket } from 'socket.io';
+import { Repository } from 'typeorm';
 import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
 import { connClients } from './interfaces/connClients.interface';
+import { User } from '../auth/entities/user.entity';
 
 @Injectable()
 export class WsService {
   private clients: connClients = {};
 
-  addClient(client: Socket) {
-    this.clients[client.id] = client;
+  constructor(
+    @InjectRepository(User) private readonly userRepository: Repository<User>,
+  ) {}
+
+  async addClient(client: Socket, userId: string) {
+    const user = await this.userRepository.findOneBy({ id: userId });
+
+    if (!user || !user.active) {
+      throw new Error('User error');
+    }
+
+    this.clients[client.id] = {
+      socket: client,
+      user: user,
+    };
   }
 
   removeClient(clientId: string) {
